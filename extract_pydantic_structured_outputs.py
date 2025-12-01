@@ -20,317 +20,428 @@ client = AzureOpenAI(
 
 class RequestType(str, Enum):
     """ Primary classification of the request"""
-    SERVICE_REQUEST = "service_request"
-    INCIDENT = "incident"
-    GENERAL_INQUIRY = "general_inquiry"
-    OUT_OF_SCOPE = "out_of_scope"
+    INCIDENT = "incident"  # Troubleshooting issues
+    SERVICE_REQUEST = "service_request"  # Form guidance, access requests
+    GENERAL_INQUIRY = "general_inquiry"  # Questions, information
+    OUT_OF_SCOPE = "out_of_scope"  # Non-IT topics
 
 
 class IncidentCategory(str, Enum):
     """Specific incident categories aligned with KB structure"""
-    UNIFLOW_PRINTER = "uniflow_printer"
-    CITRIX = "citrix"
-    MFA = "multifactor_authentication"
-    AD_ACCOUNT = "ad_account"
-    OTHER = "other"
+    UNIFLOW_PRINTER = "uniflow_printer"  # Printer setup, PIN reset, printing issues
+    CITRIX = "citrix"  # Login, setup, access, Workspace app
+    MFA = "multifactor_authentication"  # MFA setup, lost device, passkeys
+    AD_ACCOUNT = "ad_account"  # Account unlock, password reset, expired account
+    HARDWARE = "hardware"  # Desktop, laptop, peripheral issues
+    SOFTWARE_APPLICATION = "software_application"  # Other application issues
+    OTHER = "other"  # Other IT issues
     NOT_APPLICABLE = "not_applicable"
 
 class ServiceRequestType(str, Enum):
-    """Types of service requests (form-based)"""
-    ACCESS_REQUEST = "access_request"
-    SOFTWARE_REQUEST = "software_request"
-    HARDWARE_REQUEST = "hardware_request"
-    FORM_GUIDANCE = "form_guidance"
-    OTHER = "other"
-    NOT_APPLICABLE = "not_applicable"
-
-class FormName(str, Enum):
-    """Types of service requests (form-based)"""
-    SAP_ACCESS = "sap_access"
-    EMAIL_SHARED_DRIVE = "email_shared_drive"
-    BUSINESS_APP_ACCESS = "business_app_access"
-    NETWORK_ACCESS = "network_access"
-    GENERAL_CATALOG = "general_catalog"
-    OTHER = "other"
+    """Types of service requests from system prompt"""
+    SAP_ACCESS = "sap_access"  # SAP Access Request form
+    EMAIL_SHARED_DRIVE = "email_shared_drive"  # Email & Share Drive Request form
+    BUSINESS_APP_ACCESS = "business_app_access"  # Core Business Applications Access form
+    NETWORK_ACCESS = "network_access"  # Network Access Order Guide form
+    GENERAL_CATALOG = "general_catalog"  # Generic catalog fallback
+    OTHER_FORM = "other_form"
     NOT_APPLICABLE = "not_applicable"
 
 class ResolutionMethod(str, Enum):
-    """How it was resolved"""
-    KB_GUIDED = "kb_guided"
-    FORM_PROVIDED = "form_provided"
-    SIMPLE_ANSWER = "simple_answer"
-    ESCALATED = "escalated"
-    NOT_RESOLVED = "not_resolved"
-    USER_ABANDONED = "user_abandoned"
-    OUT_OF_SCOPE = "out_of_scope"
+    """How the issue was handled - For process improvement tracking"""
+    KB_GUIDED_TROUBLESHOOTING = "kb_guided_troubleshooting"  # Followed KB steps
+    FORM_PROVIDED = "form_provided"  # Directed to service request form
+    SIMPLE_INFORMATION = "simple_information"  # Quick answer without KB/form
+    ESCALATED = "escalated"  # Created ticket for agent
+    NO_RESOLUTION = "no_resolution"  # Could not resolve
     NOT_APPLICABLE = "not_applicable"
 
 class ResolutionStatus(str, Enum):
-    """Final outcome of the conversation"""
+    """Final outcome of the conversation - Critical for FCR and Automation Success"""
     RESOLVED_BY_BOT = "resolved_by_bot"  # Issue fixed without escalation
     RESOLVED_WITH_FORM = "resolved_with_form"  # User directed to correct form
     ESCALATED_TO_HUMAN = "escalated_to_human"  # Ticket created and left open for transfer to agent
-    UNRESOLVED = "unresolved"  # No solution found or provided
     USER_ABANDONED = "user_abandoned"  # User left before completion
     OUT_OF_SCOPE = "out_of_scope"  # Non-IT issue
+    BOT_FAILURE = "bot_failure"  # Bot went silent or failed to respond
 
-class EsclationReason(str, Enum):
-    """Reason for escalation"""
-    KB_STEPS_FAILED = "kb_steps_failed"
-    NO_KB_ARTICLE = "no_kb_article"
-    USER_REQUESTED_HUMAN = "user_requested_human"
-    COMPLEX_ISSUE = "complex_issue"
-    USER_FRUSTRATED = "user_frustrated"
-    TECHNICAL_LIMITATION = "technical_limitation"
-    AUTHENTICATION_REQUIRED = "authentication_required"
+class EscalationReason(str, Enum):
+    """Why escalation occurred - Critical for KB gap identification"""
+    KB_STEPS_FAILED = "kb_steps_failed"  # Troubleshooting didn't work
+    NO_KB_ARTICLE_FOUND = "no_kb_article_found"  # Missing KB content
+    KB_STEPS_INFEASIBLE = "kb_steps_infeasible"  # User can't perform steps
+    USER_REQUESTED_HUMAN = "user_requested_human"  # Explicit request for agent
+    USER_FRUSTRATED = "user_frustrated"  # Frustration during conversation
+    COMPLEX_ISSUE = "complex_issue"  # Beyond bot capability
+    URGENT_REQUEST = "urgent_request"  # Marked as urgent/emergency
+    AUTHENTICATION_REQUIRED = "authentication_required"  # Backend access needed
     NOT_ESCALATED = "not_escalated"
 
 class ConversationQuality(str, Enum):
-    """Quality of the bot's handling"""
-    EXCELLENT = "excellent"  # Efficient, clear, resolved quickly
-    GOOD = "good"  # Standard handling, minor issues
-    FAIR = "fair"  # Some confusion or inefficiency
-    POOR = "poor"  # Significant issues in handling
+    """Bot performance quality - For Voice Assistant Quality metric"""
+    EXCELLENT = "excellent"  # Perfect protocol adherence, efficient
+    GOOD = "good"  # Minor issues, still effective
+    ACCEPTABLE = "acceptable"  # Some problems but got there eventually
+    POOR = "poor"  # Significant protocol violations
+    FAILED = "failed"  # Major failures, bot went silent
     
 
 class UserSentiment(str, Enum):
-    """User sentiment during the conversation"""
-    VERY_POSITIVE = "very_positive"
-    POSITIVE = "positive"
-    NEUTRAL = "neutral"
-    NEGATIVE = "negative"
-    FRUSTRATED = "frustrated"    
+    """User sentiment - For Employee Satisfaction scoring"""
+    VERY_SATISFIED = "very_satisfied"  # Explicitly happy, thanked profusely
+    SATISFIED = "satisfied"  # Positive, issue resolved
+    NEUTRAL = "neutral"  # No strong emotion either way
+    DISSATISFIED = "dissatisfied"  # Negative, some frustration
+    VERY_DISSATISFIED = "very_dissatisfied"  # Clearly frustrated or angry 
 
-class ConversationQuality(str, Enum):
-    """Quality of the conversation"""
-    EXCELLENT = "excellent"
-    GOOD = "good"
-    ACCEPTABLE = "acceptable"
-    POOR = "poor"
-    FAILED = "failed"
+class BotFailureType(str, Enum):
+    """Specific types of bot failures - For debugging and improvement"""
+    WENT_SILENT = "went_silent"  # Bot stopped responding after question
+    MISSED_KB_SEARCH = "missed_kb_search"  # Didn't search KB when required
+    MULTIPLE_QUESTIONS = "multiple_questions"  # Asked multiple questions at once
+    WRONG_FORM_PROVIDED = "wrong_form_provided"  # Provided incorrect form
+    PROTOCOL_VIOLATION = "protocol_violation"  # Other system prompt violations
+    NONE = "none"
 
-class ITHelpdeskConversation(BaseModel):
-    """Schema for extracting structured data from IT helpdesk conversations, designed to power comprehensive analytics."""
+class CallEndReason(str, Enum):
+    RESOLVED_NORMAL_CLOSE = "resolved_normal_close"  # Issue resolved, proper goodbye
+    ESCALATED_CLOSE = "escalated_close"  # Ticket created, call ended
+    FORM_PROVIDED_CLOSE = "form_provided_close"  # Form sent, call ended
+    USER_ABANDONED = "user_abandoned"  # User stopped responding
+    USER_DISCONNECTED = "user_disconnected"  # Technical disconnection
+    USER_REQUESTED_END = "user_requested_end"  # User said goodbye without resolution
+    BOT_FAILURE = "bot_failure"  # Bot went silent/crashed
+    OUT_OF_SCOPE_REDIRECT = "out_of_scope_redirect"  # Non-IT, redirected elsewhere
+    URGENT_HANDOFF = "urgent_handoff"  # Urgent escalation quick close
 
-    # Request Classification
+# ============================================================================
+# MAIN SCHEMA
+# ============================================================================
+
+class ConversationAnalytics(BaseModel):
+    """
+    Comprehensive conversation analytics schema designed for dashboard metrics.
+    
+    This schema extracts structured data from IT helpdesk conversations to power:
+    - Employee Satisfaction Score
+    - First Call Resolution (FCR)
+    - Time to Resolution
+    - Automation Success Rate
+    - KB Gap Identification
+    - Top Issues/Intents
+    - Escalation Analysis
+    """
+
+    # ========================================================================
+    # REQUEST CLASSIFICATION - For "Top Issues/Intents" dashboard
+    # ========================================================================
+
     request_type: RequestType = Field(
-        description="Type of request: service_request (form guidance) or incident (troubleshooting)"
+        description="Primary classification: incident, service_request, general_inquiry, or out_of_scope"
     )
     
     incident_category: IncidentCategory = Field(
-        description="Category of incident if applicable: uniflow_printer, citrix, mfa, ad_account, or other"
+        description="Specific incident category if applicable (uniflow_printer, citrix, mfa_authenticator, ad_account, etc.)"
     )
     
     service_request_type: ServiceRequestType = Field(
-        description="Type of service request if applicable: form_guidance, access_request, etc. Set tp 'not_applicable' if this is an incident."
+        description="Specific service request type if applicable (sap_access, email_shared_drive, etc.)"
     )
-
-    form_name: FormName = Field(
-        description="Name of the form provided if applicable: sap_access, email_shared_drive, business_app_access, network_access, general_catalog, or other"
-    )
-    # Issue Details
-    primary_issue_description: str = Field(
-        max_length=256,
-        description="Brief description of the main issue or request in 1-2 clear sentences. Example: 'User unable to receive MFA approvals after switching to new phone. Needed help setting up Microsoft Authenticator on new device.'"
+    
+    issue_summary: str = Field(
+        max_length=200,
+        description="One-sentence summary of the issue/request. Example: 'User unable to print to Uniflow after PIN reset'"
     )
     
     issue_keywords: List[str] = Field(
         default_factory=list,
-        max_length=5,
-        description="Key technical terms mentioned (e.g., 'new phone', 'security settings', 'login failed', 'access denied', 'freezing', 'crashing')"
+        description="Key technical terms from conversation (max 5). Example: ['uniflow', 'pin reset', 'printer']"
     )
     
-    # Resolution Information
+    # ========================================================================
+    # RESOLUTION TRACKING - For FCR, Automation Success, Time to Resolution
+    # ========================================================================
+    
     resolution_status: ResolutionStatus = Field(
-        description="Final outcome of the conversation"
+        description="""Final outcome:
+        - resolved_by_bot: Issue fixed without escalation (counts as FCR + Automation Success)
+        - resolved_with_form: Form provided successfully (counts as FCR + Automation Success)
+        - escalated_to_agent: Ticket created for follow-up (NOT FCR, NOT Automation Success)
+        - user_abandoned: User left before completion (NOT FCR)
+        - out_of_scope: Non-IT issue (NOT counted in metrics)
+        - bot_failure: Bot went silent/failed (counts as failure)
+        """
     )
     
     resolution_method: ResolutionMethod = Field(
-        description="""HOW was it resolved? kb_guided, form_provided, simple_answer, escalated, not_resolved"""
+        description="How it was handled: kb_guided_troubleshooting, form_provided, simple_information, escalated, no_resolution"
     )
     
     resolution_provided: Optional[str] = Field(
         None,
         max_length=300,
-        description="""Brief summary of solution provided. Only include if resolved/partially_resolved.
-        Example: 'Guided user through security settings to add new Authenticator device via QR code.'"""
+        description="Brief summary of solution if resolved. Example: 'Guided user to reset Uniflow PIN via security settings'"
+    )
+
+    # ========================================================================
+    # ESCALATION ANALYSIS - For "Escalation Reasons" dashboard & KB Gap ID
+    # ========================================================================
+    
+    escalation_reason: EscalationReason = Field(
+        description="""Primary reason for escalation - CRITICAL for KB gap identification:
+        - kb_steps_failed: Steps didn't work (need better KB)
+        - no_kb_article_found: No KB content (definite gap)
+        - kb_steps_infeasible: Steps too complex (need simplification)
+        - user_requested_human: Explicit request
+        - user_frustrated: Escalated due to frustration
+        - complex_issue: Beyond bot scope
+        - urgent_request: Emergency handling
+        - authentication_required: Backend access needed
+        """
     )
     
-    first_call_resolution: bool = Field(
-        description="True if issue was fully resolved without escalation or follow-up needed"
-    )
-
-    automation_success: bool = Field(
-        description="True if bot handled the request end-to-end without human agent intervention"
-    )
-
-    ticket_created: bool = Field(
-        default=False,
-        description="Whether a ServiceNow ticket (INC/REQ/IMS)was created"
-    )
-
-    ticket_number: Optional[str] = Field(
+    escalation_turn_number: Optional[int] = Field(
         None,
-        description="ServiceNow ticket number if applicable"
+        description="Turn number when escalation occurred (for efficiency analysis)"
     )
 
-    form_urls_provided: List[str] = Field(
-        default_factory=list,
-        description="List of form URLs shared with the user"
-    )
+    # ========================================================================
+    # KB EFFECTIVENESS - For KB Gap Identification & Process Improvement
+    # ========================================================================
     
-    kb_articles_referenced: bool = Field(
-        default=False,
-        description="Whether knowledge base articles were referenced or used"
-    )
-    
-    # Escalation Tracking (for improvement areas)
-    escalated_to_human: bool = Field(
-        default=False,
-        description="Whether conversation was escalated to a human agent"
-    )
-
-    escalation_reason: EsclationReason = Field(
-        description="Primary reason for escalation if applicable"
-    )
-
-    escalation_point: Optional[int] = Field(
-        None,
-        description="Turn number at which escalation occurred (for efficiency analysis)"
-    )   
-
-    # Troubleshooting & KB Usage (for quality tracking)
     kb_search_performed: bool = Field(
-        default=False,
-        description="Whether a knowledge base search was performed"
+        description="Whether KB search tool was called (per system prompt requirement)"
     )
-
-    kb_articles_found: bool = Field(
-        default=False,
-        description="Whether a relevant knowledge base articles was found"
+    
+    kb_article_found: bool = Field(
+        description="Whether a relevant KB article was returned from search"
     )
-
+    
     kb_steps_attempted: List[str] = Field(
         default_factory=list,
-        description="List of troubleshooting steps attempted from KB (e.g., 'restart phone', 'reinstall app', 'check iOS version')"
+        description="List of troubleshooting steps from KB that were attempted. Example: ['Reset PIN', 'Clear cache', 'Reinstall app']"
     )
-
-    troubleshooting_steps_count: int = Field(
+    
+    kb_steps_count: int = Field(
         default=0,
-        description="Number of distinct troubleshooting steps attempted from KB"
+        description="Number of distinct troubleshooting steps attempted"
     )
-
+    
     kb_steps_successful: bool = Field(
-        default=False,
-        description="Whether the troubleshooting steps from KB were successful in resolving the issue"
+        description="Whether KB steps resolved the issue (TRUE = good KB, FALSE = potential gap)"
     )
-
-    # Form Handling (for Service Request Tracking)
-
+    
+    # ========================================================================
+    # FORM HANDLING - For "Generic Form Usage" dashboard
+    # ========================================================================
+    
     form_provided: bool = Field(
-        default=False,
-        description="Whether a form was provided to the user"
+        description="Whether a service request form was provided to user"
     )
-
+    
+    form_type_provided: Optional[ServiceRequestType] = Field(
+        None,
+        description="Which form was provided (if applicable)"
+    )
+    
     form_url_sent: Optional[str] = Field(
         None,
-        description="The specific form URL provided to the user, if any"
+        description="The form URL that was sent via Teams"
     )
-
-    form_identified_correctly: bool = Field(
+    
+    correct_form_provided: bool = Field(
         default=True,
-        description="Whether the bot identified and provided the correct form based on user request"
+        description="Whether the bot identified and provided the CORRECT form (FALSE = process failure)"
     )
 
-    # Conversation Metrics
-    total_conversation_turns: int = Field(
-        description="Total number of back-and-forth exchanges (user + assistant messages)"
+    # ========================================================================
+    # TICKET TRACKING - Links to server-side data
+    # ========================================================================
+    
+    ims_ticket_created: bool = Field(
+        description="Whether an IMS interaction ticket was created (should be TRUE for all IT calls per protocol)"
     )
     
-    user_message_count: int = Field(
-        description="Number of messages from the user"
+    ims_ticket_number: Optional[str] = Field(
+        None,
+        description="IMS ticket number if created"
     )
     
-    assistant_message_count: int = Field(
-        description="Number of messages from the assistant"
+    inc_ticket_created: bool = Field(
+        description="Whether an INC incident ticket was created (indicates escalation)"
     )
     
-    # User Experience
+    inc_ticket_number: Optional[str] = Field(
+        None,
+        description="INC ticket number if created"
+    )
+
+    # ========================================================================
+    # CONVERSATION METRICS - For Time/Duration analysis
+    # ========================================================================
+    
+    total_turns: int = Field(
+        description="Total conversation turns (user + assistant messages)"
+    )
+    
+    user_turns: int = Field(
+        description="Number of user messages"
+    )
+    
+    assistant_turns: int = Field(
+        description="Number of assistant messages"
+    )
+    
+    conversation_ended_naturally: bool = Field(
+        description="""TRUE if conversation ended with proper closing (bot farewell or user goodbye).
+        FALSE if bot went silent, user abandoned, or technical disconnection."""
+    )
+    
+    # ========================================================================
+    # USER EXPERIENCE - For Employee Satisfaction Score (PRIMARY KPI)
+    # ========================================================================
+    
     user_sentiment: UserSentiment = Field(
-        description="Overall sentiment of the user throughout the conversation"
+        description="""Overall user sentiment throughout conversation:
+        - very_satisfied: Explicitly happy, thanked multiple times
+        - satisfied: Positive, issue resolved, no complaints
+        - neutral: No strong emotion
+        - dissatisfied: Some frustration, negative comments
+        - very_dissatisfied: Clearly frustrated or angry
+        
+        This feeds the Employee Satisfaction Score dashboard KPI."""
+    )
+    
+    satisfaction_score: int = Field(
+        ge=1,
+        le=5,
+        description="""Numeric satisfaction score 1-5 for dashboard:
+        5 = Very Satisfied
+        4 = Satisfied
+        3 = Neutral
+        2 = Dissatisfied
+        1 = Very Dissatisfied
+        
+        Maps directly to UserSentiment enum for Employee Satisfaction Score metric."""
     )
     
     user_expressed_satisfaction: Optional[bool] = Field(
         None,
-        description="True if user explicitly expressed satisfaction; False if dissatisfaction; None if unclear"
+        description="TRUE if user explicitly said thanks/expressed satisfaction. FALSE if expressed dissatisfaction. None if unclear."
     )
     
     user_expressed_frustration: bool = Field(
-        default=False,
         description="Whether user showed signs of frustration during conversation"
     )
     
     frustration_triggers: List[str] = Field(
         default_factory=list,
-        description="What caused frustration if applicable (e.g., 'repeated failed steps', 'misunderstanding', 'long wait')"
+        description="What caused frustration if applicable. Example: ['repeated failed steps', 'bot went silent', 'unclear instructions']"
     )
+
+    call_end_reason: CallEndReason = Field(
+        description="Specific reason how/why the call ended - for 'Reason Call Ended' dashboard"
+    )
+
+    # ========================================================================
+    # BOT PERFORMANCE - For Voice Assistant Quality dashboard
+    # ========================================================================
     
-    # Conversation Quality (for bot performance)
     conversation_quality: ConversationQuality = Field(
-        description="Overall quality rating of how well the bot handled the conversation"
-    )
-
-    followed_protocol: bool = Field(
-        default=True,
-        description="Whether the bot followed the system prompt protocols (KB search, step-by-step, etc.)"
-    )
-
-    issues_with_bot_behaviour: List[str] = Field(
-        default_factory=list,
-        description="List any problems with bot performance if applicable (e.g., 'skipped KB search', 'gave multiple questions at once', 'unclear instructions')"
-    )
-
-    # Additional Context (for follow-up & notes)
-    follow_up_required: bool = Field(
-        default=False,
-        description="Whether a follow-up action is needed from a human agent or IT Team"
+        description="""Overall quality of bot handling:
+        - excellent: Perfect protocol, efficient, clear
+        - good: Minor issues but effective
+        - acceptable: Some problems but resolved eventually
+        - poor: Significant protocol violations
+        - failed: Major failures, bot went silent
+        
+        This feeds Voice Assistant Quality metric."""
     )
     
-    user_information_collected: bool = Field(
-        default=False,
-        description="Whether the bot collected user information (e.g., name, employee ID) for ticket logging"
+    quality_score: int = Field(
+        ge=1,
+        le=5,
+        description="""Numeric quality score 1-5 for dashboard:
+        5 = Excellent
+        4 = Good
+        3 = Acceptable
+        2 = Poor
+        1 = Failed
+        
+        Maps to ConversationQuality enum for Voice Assistant Quality dashboard."""
+    )
+    
+    bot_followed_protocol: bool = Field(
+        description="""Whether bot followed system prompt protocols:
+        - Called KB tool before troubleshooting
+        - Asked one question at a time
+        - Collected triage details before creating tickets
+        - Used proper closing protocol
+        """
+    )
+    
+    bot_failure_occurred: bool = Field(
+        description="Whether any bot failure/malfunction occurred during conversation"
+    )
+    
+    bot_failure_type: BotFailureType = Field(
+        description="""Type of bot failure if applicable:
+        - went_silent: Bot stopped responding (from your 64% analysis)
+        - missed_kb_search: Didn't search KB when required
+        - multiple_questions: Asked multiple questions at once (protocol violation)
+        - wrong_form_provided: Provided incorrect form
+        - protocol_violation: Other system prompt violations
+        """
+    )
+    
+    protocol_violations: List[str] = Field(
+        default_factory=list,
+        description="Specific protocol violations if any. Example: ['skipped KB search', 'asked 3 questions at once', 'no closing protocol']"
     )
 
+    # ========================================================================
+    # URGENT REQUEST HANDLING
+    # ========================================================================
+    
+    urgent_request: bool = Field(
+        description="Whether user indicated urgency (urgent, emergency, critical, need help now)"
+    )
+    
+    urgent_handled_correctly: Optional[bool] = Field(
+        None,
+        description="If urgent: was it handled per urgent protocol (quick triage, ticket, close)?"
+    )
+
+    # ========================================================================
+    # MULTI-ISSUE & EDGE CASES
+    # ========================================================================
+    
     multi_issue_conversation: bool = Field(
-        default=False,
         description="Whether user raised multiple separate issues in one conversation"
     )
     
-    out_of_scope_request: bool = Field(
-        default=False,
-        description="Whether user asked about non-IT topics (HR, payroll, facilities, etc.)"
+    secondary_issues: List[str] = Field(
+        default_factory=list,
+        description="List of secondary issues raised if multi_issue_conversation=True"
+    )
+
+    third_party_request: bool = Field(
+        description="Whether caller was calling on behalf of someone else (affects user identification)"
     )
     
-    technical_terms_confused_user: bool = Field(
-        default=False,
-        description="Whether technical jargon or terminology confused the user"
+    technical_confusion: bool = Field(
+        description="Whether user was confused by technical terms or jargon"
     )
 
-    additional_notes: Optional[str] = Field(
-        None,
-        description="Any other relevant observations, edge cases or context"
-    )
-
-
-def extract_structured_data(conversation_messages: List[dict]) -> ITHelpdeskConversation:
+def extract_structured_data(conversation_messages: List[dict]) -> ConversationAnalytics:
     """
-    Extract structured data from conversation messages using GPT-4o.
+    Extract structured data from conversation messages using GPT 4.1.
     
     Args:
         conversation_messages: List of dicts with 'role' and 'content' keys
         
     Returns:
-        ITHelpdeskConversation object with extracted data
+        ConversationAnalytics object with extracted data
     """
     # Format the conversation for the prompt
     conversation_text = "\n".join([
@@ -339,21 +450,28 @@ def extract_structured_data(conversation_messages: List[dict]) -> ITHelpdeskConv
     ])
     
     # Create the extraction prompt
-    system_prompt = """You are an expert at analyzing IT helpdesk conversations and extracting structured information.
-Analyze the conversation and extract all relevant fields according to the schema provided.
-
-For Asahi IT Helpdesk context:
-- Service requests are when users need guidance to forms/URLs
-- Incidents are troubleshooting issues in these categories: uniflow_printer, citrix, multifactor_authentication (MFA), ad_account
-- Pay attention to resolution quality and user sentiment
-- Note any escalations or unresolved issues
-"""
+    system_prompt = """You are an expert IT helpdesk conversation analyst specializing in:
+    - Detecting bot failures
+    - Acurately assessing user sentiment and satisfaction 
+    - Identifying knowledge base gaps and resolution outcomes
+    
+    Use the full 1-5 scoring range. Be conservative - high scores must be earned.
+    
+    Extract all relevant fields according to the schema provided.
+    """
     
     user_prompt = f"""Analyze this IT helpdesk conversation and extract structured information:
 
-{conversation_text}
+    {conversation_text}
 
-Provide detailed analysis following the schema."""
+    **IMPORTANT NOTES:**
+    - Analyze the ENTIRE conversation to determine the outcome
+    - Pay attention to the LAST few message to understand how it ended
+    - If bot asked a question but never responded after user's answer, that's a bot failure
+    - User saying "hello" or "are you there? after bot question = likely bot went silent
+    - Be conservative with satisfaction/quality score - must be earned
+    - Separate IMS tickets (always created for IT calls) from INC tickets (esclations only)
+    """
     
     # Call GPT-4o with structured output
     completion = client.beta.chat.completions.parse(
@@ -362,7 +480,7 @@ Provide detailed analysis following the schema."""
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt}
         ],
-        response_format=ITHelpdeskConversation
+        response_format=ConversationAnalytics
     )
     
     return completion.choices[0].message.parsed
